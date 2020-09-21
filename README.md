@@ -1,4 +1,4 @@
-# methylation_analysis
+# Methylation Analysis
 Comprehensive tutorial for differential methylation analysis, differential variability analysis and integrative analysis.
 The code and approaches that I share here are those I am using to analyze TCGA methylation data.
 
@@ -312,3 +312,34 @@ dev.off()
 
 ```
   ![alt text](https://github.com/hamidghaedi/methylation_analysis/blob/master/dmr.png)
+
+### Differential variability analysis
+
+Rather than testing for DMCs and DMRs, we may be interested in testing for differences between group variances. This could be quite helpful for feature selection in ML baesd projects. In these situation you may perefre to selct variables that shows great diffrences between groups.
+```R
+#__________________________Differential variability_________________#
+fitvar <- varFit(mval, design = design, coef = c(1,2))
+
+# Summary of differential variability
+summary(decideTests(fitvar))
+
+topDV <- topVar(fitvar)
+# Top 10 differentially variable CpGs between old vs. newborns
+topDV
+
+# visualization
+# get beta values for ageing data
+par(mfrow=c(5,2))
+sapply(rownames(topDV)[1:10], function(cpg){
+  plotCpg(bval, cpg=cpg, pheno= clinical$paper_Histologic.grade, 
+          ylab = "Beta values")
+})
+
+
+## if you got this error: Error in plot.new() : figure margins too large 
+#Do the following and try again:
+#graphics.off()
+#par("mar")
+#par(mar=c(1,1,1,1))
+```
+  ![alt text](https://github.com/hamidghaedi/methylation_analysis/blob/master/VMCs.PNG)
