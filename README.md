@@ -186,5 +186,129 @@ ggplot(data=dat, aes(x=foldchange, y = logPvalue, color=threshold)) +
   ![alt text](https://github.com/hamidghaedi/methylation_analysis/blob/master/volcano.plot.PNG)
   
   
-### Differentially methylated regions (DMRs)
+### Differentially methylated regions (DMRs) analysis
+```R
+# setting some annotation
+myAnnotation <- cpg.annotate(object = mval, datatype = "array", 
+                             what = "M", 
+                             analysis.type = "differential", 
+                             design = design, 
+                             contrasts = FALSE, 
+                             coef = "paper_Histologic.gradeHigh Grade", 
+                             arraytype = "450K",
+                             fdr = 0.001)
+str(myAnnotation)
 
+# DMR analysis
+DMRs <- dmrcate(myAnnotation, lambda=1000, C=2)
+results.ranges <- extractRanges(DMRs)
+results.ranges
+```
+![alt text] (https://github.com/hamidghaedi/methylation_analysis/blob/master/top.20.dmr.PNG)
+```R
+# visualization
+dmr.table <- data.frame(results.ranges)
+
+# setting up variable for groupinh and color
+
+pal <- brewer.pal(8,"Dark2")
+groups <- pal[1:length(unique(clinical$paper_Histologic.grade))]
+names(groups) <- levels(factor(clinical$paper_Histologic.grade))
+
+#setting up the genomic region 
+gen <- "hg19"
+# the index of the DMR that we will plot 
+dmrIndex <- 2
+# coordinates are stored under results.ranges[dmrIndex]
+
+chrom <- as.character(seqnames(results.ranges[dmrIndex]))
+start <- as.numeric(start(results.ranges[dmrIndex]))
+end <- as.numeric(end(results.ranges[dmrIndex]))
+
+# add 25% extra space to plot
+minbase <- start - (0.25*(end-start))
+maxbase <- end + (0.25*(end-start))
+
+
+# defining CpG islands track
+# download cpgislands for chromosome number 6 from ucsc
+chr6.cpg <- read.csv("chr6-cpg.csv")
+
+islandData <- GRanges(seqnames=Rle(chr6.cpg[,1]), 
+                      ranges=IRanges(start=chr6.cpg[,2],
+                                     end=chr6.cpg[,3]),
+                      strand=Rle(strand(rep("*",nrow(chr6.cpg)))))
+
+# DNAseI hypersensitive sites track
+#downloaded from ucsc
+chr6.dnase <- read.csv("chr6-dnase.csv")
+
+dnaseData <- GRanges(seqnames=chr6.dnase[,1],
+                     ranges=IRanges(start=chr6.dnase[,2], end=chr6.dnase[,3]),
+                     strand=Rle(rep("*",nrow(chr6.dnase))),
+                     data=chr6.dnase[,5])
+
+#Setting up the ideogram, genome and RefSeq tracks 
+
+iTrack <- IdeogramTrack(genome = gen, chromosome = chrom, name=paste0(chrom))
+gTrack <- GenomeAxisTrack(col="black", cex=1, name="", fontcolor="black")
+rTrack <- UcscTrack(genome=gen, chromosome=chrom, track="NCBI RefSeq", 
+                    from=minbase, to=maxbase, trackType="GeneRegionTrack", 
+                    rstarts="exonStarts", rends="exonEnds", gene="name", 
+                    symbol="name2", transcript="name", strand="strand", 
+                    fill="darkblue",stacking="squish", name="RefSeq", 
+                    showId=TRUE, geneSymbol=TRUE)
+
+#Ensure that the methylation data is ordered by chromosome and base position.
+
+ann450kOrd <- ann450k[order(ann450k$chr,ann450k$pos),]
+bvalOrd <- bval[match(ann450kOrd$Name,rownames(bval)),]
+
+#Create the data tracks:
+# create genomic ranges object from methylation data
+cpgData <- GRanges(seqnames=Rle(ann450kOrd$chr),
+                   ranges=IRanges(start=ann450kOrd$pos, end=ann450kOrd$pos),
+                   strand=Rle(rep("*",nrow(ann450kOrd))),
+                   betas=bvalOrd)
+
+# methylation data track
+methTrack <- DataTrack(range=cpgData, 
+                       groups=clinical$paper_Histologic.grade, # change this if your groups are diffrent
+                       genome = gen,
+                       chromosome=chrom,
+                       ylim=c(-0.05,1.05),
+                       col=pal,
+                       type=c("a","p"), 
+                       name="DNA Meth.\n(beta value)",
+                       background.panel="white", 
+                       legend=TRUE, 
+                       cex.title=0.8,
+                       cex.axis=0.8, 
+                       cex.legend=0.8)
+
+# CpG island track
+islandTrack <- AnnotationTrack(range=islandData, genome=gen, name="CpG Is.", 
+                               chromosome=chrom,fill="darkgreen")
+
+# DNaseI hypersensitive site data track
+dnaseTrack <- DataTrack(range=dnaseData, genome=gen, name="DNAseI", 
+                        type="gradient", chromosome=chrom)
+
+# DMR position data track
+dmrTrack <- AnnotationTrack(start=start, end=end, genome=gen, name="DMR", 
+                            chromosome=chrom,fill="darkred")
+
+
+# Set up the track list and indicate the relative sizes of the different tracks. 
+# Finally, draw the plot using the plotTracks function
+tracks <- list(iTrack, gTrack, methTrack, dmrTrack, islandTrack, dnaseTrack,
+               rTrack)
+sizes <- c(2,2,5,2,2,2,3) # set up the relative sizes of the tracks
+
+tiff( filename = "dmr.tiff", width = 15, height = 10, units = "in", res = 400)
+plotTracks(tracks, from=minbase, to=maxbase, showTitle=TRUE, add53=TRUE, 
+           add35=TRUE, grid=TRUE, lty.grid=3, sizes = sizes, length(tracks))
+dev.off()
+
+```
+  ![alt text](https://github.com/hamidghaedi/methylation_analysis/blob/master/dmr.png)
