@@ -6,7 +6,7 @@ The three main analysis on methylation data, are covered:
 
 - differential methylation analysis
 - differential variability analysis
-- integrative analysis
+- integrative analysis **to be aaded**
 
 ## Workspace preparation
 ```R
@@ -21,6 +21,7 @@ library(DMRcate)
 library(Gviz)
 library(ggplot2)
 library(RColorBrewer)
+
 
 #_________ increasing the memory limit____________#
 memory.limit(size = 28000)
@@ -313,7 +314,7 @@ dev.off()
 ```
   ![alt text](https://github.com/hamidghaedi/methylation_analysis/blob/master/dmr.png)
 
-### Differential variability analysis
+## Differential variability analysis
 
 Rather than testing for DMCs and DMRs, we may be interested in testing for differences between group variances. This could be quite helpful for feature selection in ML baesd projects. In these situation you may perefre to selct variables that shows great diffrences between groups.
 ```R
@@ -343,3 +344,6 @@ sapply(rownames(topDV)[1:10], function(cpg){
 #par(mar=c(1,1,1,1))
 ```
   ![alt text](https://github.com/hamidghaedi/methylation_analysis/blob/master/VMCs.PNG)
+
+## Integrated analysis
+*to be added*
