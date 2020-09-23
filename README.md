@@ -6,7 +6,7 @@ The three main analysis on methylation data, are covered:
 
 - differential methylation analysis
 - differential variability analysis
-- integrative analysis **to be aaded**
+- integrative analysis *to be aaded
 
 ## Workspace preparation
 ```R
@@ -21,7 +21,7 @@ library(DMRcate)
 library(Gviz)
 library(ggplot2)
 library(RColorBrewer)
-
+library(edgeR)
 
 #_________ increasing the memory limit____________#
 memory.limit(size = 28000)
@@ -205,7 +205,8 @@ DMRs <- dmrcate(myAnnotation, lambda=1000, C=2)
 results.ranges <- extractRanges(DMRs)
 results.ranges
 ```
-![alt text] (https://github.com/hamidghaedi/methylation_analysis/blob/master/top.20.dmr.PNG)
+ ![alt text](https://github.com/hamidghaedi/Methylation_Analysis/blob/master/top.20.dmr.PNG) 
+
 ```R
 # visualization
 dmr.table <- data.frame(results.ranges)
@@ -346,4 +347,124 @@ sapply(rownames(topDV)[1:10], function(cpg){
   ![alt text](https://github.com/hamidghaedi/methylation_analysis/blob/master/VMCs.PNG)
 
 ## Integrated analysis
-*to be added*
+Aberrant methylation of CpGs in promoter  potentially could alter downstream gene expression level by interfering transcription factor function, and this process is knows as *cis-regulation*. In the other hand,  CpGs may also affect expression of genes that are located far away from them in genome. Usually this could be observed when if CpGs position  locations are happened to be in regulatory elements like enhancers. This type of regulation between CpG and gene is known as *trans-regulation*.
+Steps toward cis-regulation analysis:
+- finding probes resided within promoters
+- finding diffrentially methylated probes (|beta value| > 0.2)
+- finding genes with dysregulation( |z-score| >= 1.96)
+- Performing correlation analysis to find those with |r| > 0.3 and p-value < 0.05
+
+```R
+# finding probes in promoter of genes
+# to find regulatory features of probes
+table(data.frame(ann450k)$Regulatory_Feature_Group)
+
+# selecting a subset of probes associated with promoted
+promoter.probe <- rownames(data.frame(ann450k))[data.frame(ann450k)$Regulatory_Feature_Group 
+                                                 %in% c("Promoter_Associated", "Promoter_Associated_Cell_type_specific")]
+
+# find genes probes with significantly different methylation status in 
+# low- and high-grade bladder cancer
+
+low.g_id <- clinical$barcode[clinical$paper_Histologic.grade == "Low Grade"]
+high.g_id <- clinical$barcode[clinical$paper_Histologic.grade == "High Grade"]
+
+dbet <- data.frame (low.grade = rowMeans(bval[, low.g_id]),
+                     high.grade = rowMeans(bval[, high.g_id]))
+dbet$delta <- abs(dbet$low.grade - dbet$high.grade)
+
+db.probe <- rownames(dbet)[dbet$delta > 0.2] # those with deltabeta > 0.2
+db.probe <- db.probe %in% promoter.probe # those resided in promoter
+rm(dbet)
+# create gene probe
+promoter.genes <- data.frame(ann450k)[rownames(data.frame(ann450k)) %in% promoter.probe, ]
+
+
+#_______________ Gene Expression Analysis_______________#
+
+## expression data
+query.exp <- GDCquery(project = "TCGA-BLCA",
+                      platform = "Illumina HiSeq",
+                      data.category = "Gene expression",
+                      data.type = "Gene expression quantification", 
+                      file.type = "results",
+                      legacy = TRUE)
+GDCdownload(query.exp,  method = "api")
+dat<- GDCprepare(query = query.exp, save = TRUE, save.filename = "blcaExp.rda")
+
+rna <-assay(dat)
+clinical = data.frame(colData(dat))
+
+# find what we have for grade
+
+table(clinical$paper_Histologic.grade)
+#High Grade  Low Grade         ND 
+#384         21                3 
+table(clinical$paper_Histologic.grade, clinical$paper_mRNA.cluster)
+
+# Get rid of ND and NA samples, normal samples
+
+clinical <- clinical[(clinical$paper_Histologic.grade == "High Grade" | 
+clinical$paper_Histologic.grade == "Low Grade"), ]
+clinical$paper_Histologic.grade[clinical$paper_Histologic.grade == "High Grade"] <- "High_Grade"
+clinical$paper_Histologic.grade[clinical$paper_Histologic.grade == "Low Grade"] <- "Low_Grade"
+# since most of low-graded are in Luminal_papilary category, we remain focus on this type
+clinical <- clinical[clinical$paper_mRNA.cluster == "Luminal_papillary", ]
+clinical <- clinical[!is.na(clinical$paper_Histologic.grade), ]
+
+
+# keep samples matched between 
+rna <- rna[, row.names(clinical)]
+all(rownames(clinical) %in% colnames(rna))
+#TRUE
+
+## desinging a pipeline for normalization and expression using edgeR and limma
+
+edgeR_limma.pipe = function(
+  exp_mat,
+  groups,
+  ref.group=NULL){
+  
+  #design_factor = clinical[, groups, drop=T]
+  
+  group = factor(clinical[, groups])
+  if(!is.null(ref.group)){group = relevel(group, ref=ref.group)}
+  
+  # making DGEList object
+  d = DGEList(counts= exp_mat,
+                samples=clinical,
+                genes=data.frame(rownames(exp_mat)))
+  
+  # filtering
+  keep = filterByExpr(d,design)
+  d = d[keep,,keep.lib.sizes=FALSE]
+  rm(keep)
+  
+  # Calculate normalization factors to scale the raw library sizes (TMM and voom)
+  design = model.matrix(~ group)
+  d = calcNormFactors(d, method="TMM")
+  v = voom(d, design, plot=TRUE)
+  
+  # Model fitting uins limma package and DE calculation through Bayes
+  fit = lmFit(v, design)
+  fit = eBayes(fit)
+  
+  # DE genes
+  DE = topTable(fit, coef=ncol(design), sort.by="p",number = nrow(rna), adjust.method = "BY")
+  
+  return(
+    list( 
+      DE=DE, # DEgenes
+      voomObj=v, # Normalized counts
+      fit=fit # DE stats
+    )
+  )
+}
+
+# Runing the pipe
+de.list <- edgeR_limma.pipe(rna,"paper_Histologic.grade", "Low_Grade" )
+de.genes <- de.list$DE
+#ordering diffrentially expressed genes
+de.genes<-de.genes[with(de.genes, order(abs(logFC), adj.P.Val, decreasing = TRUE)), ]
+
+# z score calculation and finding genes with significant dysregulation
