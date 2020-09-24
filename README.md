@@ -510,9 +510,27 @@ for (i in 1:nrow(db.genes)){
     pval = round(res$p.value, 4)
     cor = round(res$estimate, 4)
     cis.reg[i,] <- c(gene, cpg, pval, cor)
-    cis.reg$adj.P.Val = round(p.adjust(cis.reg$pval, "fdr"),4)
   }
 }
+cis.reg$adj.P.Val = round(p.adjust(cis.reg$pval, "fdr"),4)
+cis.reg <- cis.reg[with(cis.reg, order(cor, adj.P.Val)), ]
 
+# top pair visualization
+# inspecting the results, C2orf74 gene has significant correlation with probes:
 
+gen.vis <- merge(data.frame(exp= cis.exp.mat["C2orf74", ]), 
+            t(cis.bval.mat[c("cg24757310", "cg01648237", "cg05037927", "cg16328106", "cg23405039", "cg18158151"), ]),
+            by = 0)
+
+par(mfrow=c(3,2))
+sapply(names(gen.vis)[3:8], function(cpg){
+  plot(x= gen.vis[ ,cpg], y = gen.vis[,2], xlab = "beta value", 
+       ylab = "normalized expression" ,
+       pch = 19,
+       main = paste("C2orf74",cpg, sep = "-"),
+       frame = FALSE)
+  abline(lm(gen.vis[,2] ~ gen.vis[ ,cpg], data = gen.vis), col = "blue")
+})
+```
+![alt text](https://github.com/hamidghaedi/Methylation_Analysis/blob/master/cis_reg.PNG)
 
