@@ -355,33 +355,8 @@ Steps toward cis-regulation analysis:
 - Performing correlation analysis to find those with |r| > 0.3 and p-value < 0.05
 
 ```R
-# finding probes in promoter of genes
-# to find regulatory features of probes
-table(data.frame(ann450k)$Regulatory_Feature_Group)
-
-# selecting a subset of probes associated with promoted
-promoter.probe <- rownames(data.frame(ann450k))[data.frame(ann450k)$Regulatory_Feature_Group 
-                                                 %in% c("Promoter_Associated", "Promoter_Associated_Cell_type_specific")]
-
-# find genes probes with significantly different methylation status in 
-# low- and high-grade bladder cancer
-
-low.g_id <- clinical$barcode[clinical$paper_Histologic.grade == "Low Grade"]
-high.g_id <- clinical$barcode[clinical$paper_Histologic.grade == "High Grade"]
-
-dbet <- data.frame (low.grade = rowMeans(bval[, low.g_id]),
-                     high.grade = rowMeans(bval[, high.g_id]))
-dbet$delta <- abs(dbet$low.grade - dbet$high.grade)
-
-db.probe <- rownames(dbet)[dbet$delta > 0.2] # those with deltabeta > 0.2
-db.probe <- db.probe %in% promoter.probe # those resided in promoter
-rm(dbet)
-# create gene probe
-promoter.genes <- data.frame(ann450k)[rownames(data.frame(ann450k)) %in% promoter.probe, ]
-
-
-#_______________ Gene Expression Analysis_______________#
-
+###gene expression data download and analysis
+## desinging a pipeline for normalization and expression using edgeR and limma
 ## expression data
 query.exp <- GDCquery(project = "TCGA-BLCA",
                       platform = "Illumina HiSeq",
@@ -393,29 +368,29 @@ GDCdownload(query.exp,  method = "api")
 dat<- GDCprepare(query = query.exp, save = TRUE, save.filename = "blcaExp.rda")
 
 rna <-assay(dat)
-clinical = data.frame(colData(dat))
+clinical.exp = data.frame(colData(dat))
 
 # find what we have for grade
 
-table(clinical$paper_Histologic.grade)
+table(clinical.exp$paper_Histologic.grade)
 #High Grade  Low Grade         ND 
 #384         21                3 
-table(clinical$paper_Histologic.grade, clinical$paper_mRNA.cluster)
+table(clinical.exp$paper_Histologic.grade, clinical.exp$paper_mRNA.cluster)
 
 # Get rid of ND and NA samples, normal samples
 
-clinical <- clinical[(clinical$paper_Histologic.grade == "High Grade" | 
-clinical$paper_Histologic.grade == "Low Grade"), ]
-clinical$paper_Histologic.grade[clinical$paper_Histologic.grade == "High Grade"] <- "High_Grade"
-clinical$paper_Histologic.grade[clinical$paper_Histologic.grade == "Low Grade"] <- "Low_Grade"
+clinical.exp <- clinical.exp[(clinical.exp$paper_Histologic.grade == "High Grade" | 
+                        clinical.exp$paper_Histologic.grade == "Low Grade"), ]
+clinical.exp$paper_Histologic.grade[clinical.exp$paper_Histologic.grade == "High Grade"] <- "High_Grade"
+clinical.exp$paper_Histologic.grade[clinical.exp$paper_Histologic.grade == "Low Grade"] <- "Low_Grade"
 # since most of low-graded are in Luminal_papilary category, we remain focus on this type
-clinical <- clinical[clinical$paper_mRNA.cluster == "Luminal_papillary", ]
-clinical <- clinical[!is.na(clinical$paper_Histologic.grade), ]
+clinical.exp <- clinical.exp[clinical.exp$paper_mRNA.cluster == "Luminal_papillary", ]
+clinical.exp <- clinical.exp[!is.na(clinical.exp$paper_Histologic.grade), ]
 
 
 # keep samples matched between 
-rna <- rna[, row.names(clinical)]
-all(rownames(clinical) %in% colnames(rna))
+rna <- rna[, row.names(clinical.exp)]
+all(rownames(clinical.exp) %in% colnames(rna))
 #TRUE
 
 ## desinging a pipeline for normalization and expression using edgeR and limma
@@ -425,15 +400,15 @@ edgeR_limma.pipe = function(
   groups,
   ref.group=NULL){
   
-  #design_factor = clinical[, groups, drop=T]
+  #design_factor = clinical.exp[, groups, drop=T]
   
-  group = factor(clinical[, groups])
+  group = factor(clinical.exp[, groups])
   if(!is.null(ref.group)){group = relevel(group, ref=ref.group)}
   
   # making DGEList object
   d = DGEList(counts= exp_mat,
-                samples=clinical,
-                genes=data.frame(rownames(exp_mat)))
+              samples=clinical.exp,
+              genes=data.frame(rownames(exp_mat)))
   
   # filtering
   keep = filterByExpr(d,design)
@@ -455,7 +430,7 @@ edgeR_limma.pipe = function(
   return(
     list( 
       DE=DE, # DEgenes
-      voomObj=v, # Normalized counts
+      voomObj=v, # NOrmalized counts
       fit=fit # DE stats
     )
   )
@@ -467,4 +442,89 @@ de.genes <- de.list$DE
 #ordering diffrentially expressed genes
 de.genes<-de.genes[with(de.genes, order(abs(logFC), adj.P.Val, decreasing = TRUE)), ]
 
-# z score calculation and finding genes with significant dysregulation
+# voomObj is normalized expression values on the log2 scale
+norm.count <- data.frame(de.list$voomObj)
+norm.count <- norm.count[,-1]
+norm.count <- t(apply(norm.count,1, function(x){2^x}))
+colnames(norm.count) <- chartr(".", "-", colnames(norm.count))
+#______________preparing methylation data for cis-regulatory analysis____________#
+
+# finding probes in promoter of genes
+# to find regulatory features of probes
+table(data.frame(ann450k)$Regulatory_Feature_Group)
+
+# selecting a subset of probes associated with promoted
+promoter.probe <- rownames(data.frame(ann450k))[data.frame(ann450k)$Regulatory_Feature_Group 
+                                                 %in% c("Promoter_Associated", "Promoter_Associated_Cell_type_specific")]
+
+# find genes probes with significantly different methylation status in 
+# low- and high-grade bladder cancer
+
+low.g_id <- clinical$barcode[clinical$paper_Histologic.grade == "Low Grade"]
+high.g_id <- clinical$barcode[clinical$paper_Histologic.grade == "High Grade"]
+
+dbet <- data.frame (low.grade = rowMeans(bval[, low.g_id]),
+                     high.grade = rowMeans(bval[, high.g_id]))
+dbet$delta <- abs(dbet$low.grade - dbet$high.grade)
+
+db.probe <- rownames(dbet)[dbet$delta > 0.2] # those with deltabeta > 0.2
+db.probe <- db.probe %in% promoter.probe # those resided in promoter
+rm(dbet)
+# those genes flanked to promote probe
+db.genes <- data.frame(ann450k)[rownames(data.frame(ann450k)) %in% db.probe, ]
+
+db.genes <- db.genes[, c("Name","UCSC_RefGene_Name")]
+
+# extending collapsed cells
+db.genes <- tidyr::separate_rows(db.genes, Name, UCSC_RefGene_Name)
+# remove duplicates
+db.genes$comb <- paste(db.genes$Name,db.genes$UCSC_RefGene_Name)
+db.genes <- db.genes[!duplicated(db.genes$comb), ]
+db.genes <- db.genes[, -3]
+
+# doing correlation analysis
+# polishing matrices to have only high grade samples
+cis.bval.mat <- bval[, high.g_id]
+cis.exp.mat <- norm.count[, high.grade.exp.id]
+#making patient name similar
+colnames(cis.bval.mat) <- substr(colnames(cis.bval.mat),1,19)
+colnames(cis.exp.mat) <- substr(colnames(cis.exp.mat),1,19)
+cis.exp.mat <- cis.exp.mat[, colnames(cis.bval.mat)]
+
+#editing expression matrix rowname
+df <- data.frame(name = row.names(cis.exp.mat)) # keeping rownames as a temporary data frame
+df <- data.frame(do.call('rbind', strsplit(as.character(df$name),'|',fixed=TRUE))) # this do magic like "text to column" in Excel!
+rowName <- df$X1
+# find duplicates in rowName, if any
+table(duplicated(rowName))
+#FALSE  TRUE 
+#20530     1 
+# in order to resolve  duplucation issue
+rowName[duplicated(rowName) == TRUE]
+#[1] "SLC35E2"
+#
+rowName[grep("SLC35E2", rowName)[2]] <- "SLC35E2_2"
+#setting rna row names 
+row.names(cis.exp.mat) <- rowName
+rm(df, rowName) # removing datasets that we do not need anymore
+
+#__________________correlation analysis__________________#
+cis.reg = data.frame( gene=character(0), cpg=character(0), pval=numeric(0), cor=numeric(0))
+
+for (i in 1:nrow(db.genes)){
+  cpg = db.genes[i,][1]
+  gene = db.genes[i,][2]
+  if (gene %in% rownames(cis.exp.mat)){
+    df1 <- data.frame(exp= cis.exp.mat[as.character(gene), ])
+    df2 <- t(cis.bval.mat[as.character(cpg), ])
+    df <- merge(df1,df2, by = 0)
+    res <- cor.test(df[,2], df[,3], method = "pearson")
+    pval = round(res$p.value, 4)
+    cor = round(res$estimate, 4)
+    cis.reg[i,] <- c(gene, cpg, pval, cor)
+    cis.reg$adjust = round(p.adjust(cis.reg$pval, "fdr"),4)
+  }
+}
+
+
+
