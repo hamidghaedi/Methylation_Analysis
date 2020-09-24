@@ -349,14 +349,13 @@ sapply(rownames(topDV)[1:10], function(cpg){
 ## Integrated analysis
 Aberrant methylation of CpGs in promoter  potentially could alter downstream gene expression level by interfering transcription factor function, and this process is knows as *cis-regulation*. In the other hand,  CpGs may also affect expression of genes that are located far away from them in genome. Usually this could be observed when if CpGs position  locations are happened to be in regulatory elements like enhancers. This type of regulation between CpG and gene is known as *trans-regulation*.
 Steps toward cis-regulation analysis:
+- Gene expression analysis (making normalized count matrix, finding diffrentially exxpressed genes)
 - finding probes resided within promoters
 - finding diffrentially methylated probes (|beta value| > 0.2)
-- finding genes with dysregulation( |z-score| >= 1.96)
 - Performing correlation analysis to find those with |r| > 0.3 and p-value < 0.05
 
 ```R
 ###gene expression data download and analysis
-## desinging a pipeline for normalization and expression using edgeR and limma
 ## expression data
 query.exp <- GDCquery(project = "TCGA-BLCA",
                       platform = "Illumina HiSeq",
@@ -371,7 +370,6 @@ rna <-assay(dat)
 clinical.exp = data.frame(colData(dat))
 
 # find what we have for grade
-
 table(clinical.exp$paper_Histologic.grade)
 #High Grade  Low Grade         ND 
 #384         21                3 
@@ -388,23 +386,19 @@ clinical.exp <- clinical.exp[clinical.exp$paper_mRNA.cluster == "Luminal_papilla
 clinical.exp <- clinical.exp[!is.na(clinical.exp$paper_Histologic.grade), ]
 
 
-# keep samples matched between 
+# keep samples matched between clinical.exp file and expression matrix
 rna <- rna[, row.names(clinical.exp)]
 all(rownames(clinical.exp) %in% colnames(rna))
 #TRUE
 
-## desinging a pipeline for normalization and expression using edgeR and limma
+## A pipeline for normalization and gene expression analysis (edgeR and limma)
 
 edgeR_limma.pipe = function(
   exp_mat,
   groups,
-  ref.group=NULL){
-  
-  #design_factor = clinical.exp[, groups, drop=T]
-  
+  ref.group=NULL){  
   group = factor(clinical.exp[, groups])
   if(!is.null(ref.group)){group = relevel(group, ref=ref.group)}
-  
   # making DGEList object
   d = DGEList(counts= exp_mat,
               samples=clinical.exp,
@@ -420,13 +414,11 @@ edgeR_limma.pipe = function(
   d = calcNormFactors(d, method="TMM")
   v = voom(d, design, plot=TRUE)
   
-  # Model fitting uins limma package and DE calculation through Bayes
+  # Model fitting and DE calculation 
   fit = lmFit(v, design)
   fit = eBayes(fit)
-  
   # DE genes
   DE = topTable(fit, coef=ncol(design), sort.by="p",number = nrow(rna), adjust.method = "BY")
-  
   return(
     list( 
       DE=DE, # DEgenes
@@ -441,17 +433,16 @@ de.list <- edgeR_limma.pipe(rna,"paper_Histologic.grade", "Low_Grade" )
 de.genes <- de.list$DE
 #ordering diffrentially expressed genes
 de.genes<-de.genes[with(de.genes, order(abs(logFC), adj.P.Val, decreasing = TRUE)), ]
-
 # voomObj is normalized expression values on the log2 scale
 norm.count <- data.frame(de.list$voomObj)
 norm.count <- norm.count[,-1]
 norm.count <- t(apply(norm.count,1, function(x){2^x}))
 colnames(norm.count) <- chartr(".", "-", colnames(norm.count))
+
 #______________preparing methylation data for cis-regulatory analysis____________#
 
 # finding probes in promoter of genes
-# to find regulatory features of probes
-table(data.frame(ann450k)$Regulatory_Feature_Group)
+table(data.frame(ann450k)$Regulatory_Feature_Group) ## to find regulatory features of probes
 
 # selecting a subset of probes associated with promoted
 promoter.probe <- rownames(data.frame(ann450k))[data.frame(ann450k)$Regulatory_Feature_Group 
@@ -470,15 +461,12 @@ dbet$delta <- abs(dbet$low.grade - dbet$high.grade)
 db.probe <- rownames(dbet)[dbet$delta > 0.2] # those with deltabeta > 0.2
 db.probe <- db.probe %in% promoter.probe # those resided in promoter
 rm(dbet)
+
 # those genes flanked to promote probe
 db.genes <- data.frame(ann450k)[rownames(data.frame(ann450k)) %in% db.probe, ]
-
 db.genes <- db.genes[, c("Name","UCSC_RefGene_Name")]
-
-# extending collapsed cells
-db.genes <- tidyr::separate_rows(db.genes, Name, UCSC_RefGene_Name)
-# remove duplicates
-db.genes$comb <- paste(db.genes$Name,db.genes$UCSC_RefGene_Name)
+db.genes <- tidyr::separate_rows(db.genes, Name, UCSC_RefGene_Name) # extending collapsed cells
+db.genes$comb <- paste(db.genes$Name,db.genes$UCSC_RefGene_Name) # remove duplicates
 db.genes <- db.genes[!duplicated(db.genes$comb), ]
 db.genes <- db.genes[, -3]
 
@@ -522,7 +510,7 @@ for (i in 1:nrow(db.genes)){
     pval = round(res$p.value, 4)
     cor = round(res$estimate, 4)
     cis.reg[i,] <- c(gene, cpg, pval, cor)
-    cis.reg$adjust = round(p.adjust(cis.reg$pval, "fdr"),4)
+    cis.reg$adj.P.Val = round(p.adjust(cis.reg$pval, "fdr"),4)
   }
 }
 
