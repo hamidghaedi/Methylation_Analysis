@@ -4,9 +4,9 @@ The code and approaches that I share here are those I am using to analyze TCGA m
 
 The three main analysis on methylation data, are covered:
 
-- differential methylation analysis
-- differential variability analysis
-- integrative analysis 
+- [differential methylation analysis](https://github.com/hamidghaedi/Methylation_Analysis#differential-methylation-analysis)
+- [differential variability analysis](https://github.com/hamidghaedi/Methylation_Analysis#differential-variability-analysis)
+- [integrative analysis](https://github.com/hamidghaedi/Methylation_Analysis#integrated-analysis) 
 
 ## Workspace preparation
 ```R
