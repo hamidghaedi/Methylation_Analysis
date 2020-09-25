@@ -1,6 +1,6 @@
 # Methylation Analysis
 Comprehensive tutorial for differential methylation analysis, differential variability analysis and integrative analysis.
-The code and approaches that I share here are those I am using to analyze TCGA methylation data.
+The code and approaches that I share here are those I am using to analyze TCGA methylation data. At the bottom of the page you can find references used to make this tutorial.. 
 
 The three main analysis on methylation data, are covered:
 
@@ -704,3 +704,6 @@ loaded via a namespace (and not attached):
 [142] org.Hs.eg.db_3.11.4           latticeExtra_0.6-29           memoise_1.1.0                
 [145] dplyr_1.0.1 
 ```
+### References:
+1- [A cross-package Bioconductor workflow for analysing methylation array data](https://www.bioconductor.org/packages/release/workflows/vignettes/methylationArrayAnalysis/inst/doc/methylationArrayAnalysis.html) by Jovana Maksimovic, Belinda Phipson and Alicia Oshlack. accessed on September 2020.
+2- [Integrative analysis of DNA methylation and gene expression identified cervical cancer-specific diagnostic biomarkers](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC6908647/). Wanxue Xu et al. 
