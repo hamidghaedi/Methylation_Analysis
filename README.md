@@ -23,11 +23,11 @@ library(ggplot2)
 library(RColorBrewer)
 library(edgeR)
 
-#_________ increasing the memory limit____________#
 memory.limit(size = 28000)
 ```
 ## Data download and preparation
 ```R
+#_________ DNA methylation Download____________#
 # DNA methylation aligned to hg19
 query_met <- GDCquery(project= "TCGA-BLCA", 
                            data.category = "DNA methylation", 
@@ -176,15 +176,19 @@ dat <- data.frame(foldchange = fit[["coefficients"]][,2], logPvalue =  -log10(fi
 dat$threshold <- as.factor(abs(dat$foldchange) < 0.4)
 
 #Visualization
+cols <- c("TRUE" = "grey", "FALSE" = "blue")
 ggplot(data=dat, aes(x=foldchange, y = logPvalue, color=threshold)) +
   geom_point(alpha=.6, size=1.2) +
+  scale_colour_manual(values = cols) +
+  geom_vline(xintercept = 0.4, colour="#990000", linetype="dashed") + 
+  geom_vline(xintercept = - 0.4, colour="#990000", linetype="dashed") +
   theme(legend.position="none") +
   xlab("Fold Change") +
   ylab("-log10 p value") +
   theme_bw() +
   theme(legend.position = "none")
   ```
-  ![alt text](https://github.com/hamidghaedi/methylation_analysis/blob/master/volcano.plot.PNG)
+  ![alt text](https://github.com/hamidghaedi/Methylation_Analysis/blob/master/volcanoplot.png)
   
   
 ### Differentially methylated regions (DMRs) analysis
