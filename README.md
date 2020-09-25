@@ -351,7 +351,7 @@ Aberrant methylation of CpGs in promoter  potentially could alter downstream gen
 
 
 Steps toward cis-regulation analysis:
-- Gene expression analysis (making normalized count matrix, finding diffrentially exxpressed genes)
+- Gene expression analysis (making normalized count matrice, finding diffrentially expressed genes)
 - finding probes resided within promoters
 - finding diffrentially methylated probes (|beta value| > 0.2)
 - Performing correlation analysis to find those with |r| > 0.3 and p-value < 0.05
