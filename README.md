@@ -462,8 +462,6 @@ dbet$delta <- abs(dbet$low.grade - dbet$high.grade)
 
 db.probe <- rownames(dbet)[dbet$delta > 0.2] # those with deltabeta > 0.2
 db.probe <- db.probe %in% promoter.probe # those resided in promoter
-rm(dbet)
-
 # those genes flanked to promote probe
 db.genes <- data.frame(ann450k)[rownames(data.frame(ann450k)) %in% db.probe, ]
 db.genes <- db.genes[, c("Name","UCSC_RefGene_Name")]
@@ -536,4 +534,65 @@ sapply(names(gen.vis)[3:8], function(cpg){
 ```
 ![alt text](https://github.com/hamidghaedi/Methylation_Analysis/blob/master/cis_reg.PNG)
 
+```R
+# trans-regulation visualization
+# adding genes to delta beta data 
+tran.reg <- data.frame(ann450k)[rownames(data.frame(ann450k)) %in% rownames(dbet), ][, c(4,24)]
+tran.reg <- tidyr::separate_rows(tran.reg, Name, UCSC_RefGene_Name) # extending collapsed cells
+tran.reg$comb <- paste(tran.reg$Name,tran.reg$UCSC_RefGene_Name) # remove duplicates
+tran.reg <- tran.reg[!duplicated(tran.reg$comb), ]
+tran.reg <- tran.reg[, -3]
+names(tran.reg)[2] <- "gene"
 
+# merging with deltabeta dataframe
+dbet$Name <- rownames(dbet)
+tran.reg <- merge(tran.reg, dbet, by = "Name")
+# joining with differential expression analysis result
+#editing expression matrix rowname
+df <- data.frame(name = row.names(de.genes)) # keeping rownames as a temporary data frame
+df <- data.frame(do.call('rbind', strsplit(as.character(df$name),'|',fixed=TRUE))) # this do magic like "text to column" in Excel!
+df$X1[df$X1 == "?"] <- df$X2 # replace "? with entrez gene number
+rowName <- df$X1
+# find duplicates in rowName, if any
+table(duplicated(rowName))
+#FALSE  TRUE 
+#16339     1    
+# in order to resolve  duplication issue
+rowName[duplicated(rowName) == TRUE]
+grep("SLC35E2", rowName)
+#[1]  9225 15546
+rowName[15546] <- "SLC35E2_2"
+#setting rna row names 
+row.names(de.genes) <- rowName
+rm(df, rowName) # removing datasets that we do not need anymore
+de.genes$rownames.exp_mat. <- rownames(de.genes)
+names(de.genes)[1] <- "gene"
+# merging
+tran.reg <- merge(tran.reg, de.genes, by = "gene")
+# inspecting data
+hist(tran.reg$logFC)
+hist(tran.reg$delta) # delta was calculated as abs(delta), re-calculate to have original value
+tran.reg$delta <- tran.reg$high.grade - tran.reg$low.grade
+
+# defining a column for coloring
+tran.reg$group <- ifelse(tran.reg$delta <= -0.2 & tran.reg$logFC <= -1.5, "hypo-down",
+                       ifelse(tran.reg$delta <= -0.2 & tran.reg$logFC >= 1.5, "hypo-up",
+                              ifelse(tran.reg$delta >= 0.2 & tran.reg$logFC <= -1.5, "hypr-down",
+                                     ifelse(tran.reg$delta >= 0.2 & tran.reg$logFC >= 1.5, "hypr-up", "not-sig"))))
+
+# plotting
+cols <- c("hypo-down" = "#B8860B", "hypo-up" = "blue", "not-sig" = "grey", "hypr-down" = "red", "hypr-up" = "springgreen4")
+
+ggplot(tran.reg, aes(x = delta, y = logFC, color = group)) +
+  geom_point(size = 2.5, alpha = 1, na.rm = T) +
+  scale_colour_manual(values = cols) + 
+  theme_bw(base_size = 14) +
+  geom_hline(yintercept = 1.5, colour="#990000", linetype="dashed") + 
+  geom_hline(yintercept = -1.5, colour="#990000", linetype="dashed") + 
+  geom_vline(xintercept = 0.2, colour="#990000", linetype="dashed") + 
+  geom_vline(xintercept = -0.2, colour="#990000", linetype="dashed") +
+  xlab("mean methylation diffrences") + 
+  ylab("Log2 expression change") 
+  ```
+  
+![alt text](https://github.com/hamidghaedi/Methylation_Analysis/blob/master/starbrust.png)
