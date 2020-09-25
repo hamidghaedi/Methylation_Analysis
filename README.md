@@ -23,7 +23,8 @@ library(ggplot2)
 library(RColorBrewer)
 library(edgeR)
 
-memory.limit(size = 28000)
+#increase memory size
+memory.limit(size = 28000) # do this on your own risk! 
 ```
 ## Data download and preparation
 ```R
@@ -477,7 +478,7 @@ db.genes <- db.genes[, -3]
 # doing correlation analysis
 # polishing matrices to have only high grade samples
 cis.bval.mat <- bval[, high.g_id]
-cis.exp.mat <- norm.count[, high.grade.exp.id]
+cis.exp.mat <- norm.count[, rownames(clinical.exp)[clinical.exp$paper_Histologic.grade == "High_Grade"]]
 #making patient name similar
 colnames(cis.bval.mat) <- substr(colnames(cis.bval.mat),1,19)
 colnames(cis.exp.mat) <- substr(colnames(cis.exp.mat),1,19)
@@ -528,7 +529,8 @@ gen.vis <- merge(data.frame(exp= cis.exp.mat["C2orf74", ]),
 
 par(mfrow=c(3,2))
 sapply(names(gen.vis)[3:8], function(cpg){
-  plot(x= gen.vis[ ,cpg], y = gen.vis[,2], xlab = "beta value", 
+  plot(x= gen.vis[ ,cpg], y = gen.vis[,2], xlab = "beta value",
+       xlim = c(0,1),
        ylab = "normalized expression" ,
        pch = 19,
        main = paste("C2orf74",cpg, sep = "-"),
