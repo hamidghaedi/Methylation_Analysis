@@ -6,7 +6,7 @@ The three main analysis on methylation data, are covered:
 
 - differential methylation analysis
 - differential variability analysis
-- integrative analysis *to be aaded
+- integrative analysis 
 
 ## Workspace preparation
 ```R
@@ -348,6 +348,8 @@ sapply(rownames(topDV)[1:10], function(cpg){
 
 ## Integrated analysis
 Aberrant methylation of CpGs in promoter  potentially could alter downstream gene expression level by interfering transcription factor function, and this process is knows as *cis-regulation*. In the other hand,  CpGs may also affect expression of genes that are located far away from them in genome. Usually this could be observed when if CpGs position  locations are happened to be in regulatory elements like enhancers. This type of regulation between CpG and gene is known as *trans-regulation*.
+
+
 Steps toward cis-regulation analysis:
 - Gene expression analysis (making normalized count matrix, finding diffrentially exxpressed genes)
 - finding probes resided within promoters
@@ -533,4 +535,5 @@ sapply(names(gen.vis)[3:8], function(cpg){
 })
 ```
 ![alt text](https://github.com/hamidghaedi/Methylation_Analysis/blob/master/cis_reg.PNG)
+
 
