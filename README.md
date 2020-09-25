@@ -602,3 +602,105 @@ ggplot(tran.reg, aes(x = delta, y = logFC, color = group)) +
   ```
   
 ![alt text](https://github.com/hamidghaedi/Methylation_Analysis/blob/master/starbrust.png)
+
+```R
+sessionInfo()
+R version 4.0.2 (2020-06-22)
+Platform: x86_64-w64-mingw32/x64 (64-bit)
+Running under: Windows 10 x64 (build 18363)
+
+Matrix products: default
+
+locale:
+[1] LC_COLLATE=English_Canada.1252  LC_CTYPE=English_Canada.1252    LC_MONETARY=English_Canada.1252
+[4] LC_NUMERIC=C                    LC_TIME=English_Canada.1252    
+
+attached base packages:
+ [1] grid      stats4    parallel  stats     graphics  grDevices utils     datasets  methods  
+[10] base     
+
+other attached packages:
+ [1] DMRcatedata_2.6.0                                  
+ [2] ExperimentHub_1.14.2                               
+ [3] AnnotationHub_2.20.2                               
+ [4] BiocFileCache_1.12.1                               
+ [5] dbplyr_1.4.4                                       
+ [6] edgeR_3.30.3                                       
+ [7] RColorBrewer_1.1-2                                 
+ [8] ggplot2_3.3.2                                      
+ [9] Gviz_1.32.0                                        
+[10] DMRcate_2.2.2                                      
+[11] missMethyl_1.22.0                                  
+[12] IlluminaHumanMethylationEPICanno.ilm10b4.hg19_0.6.0
+[13] limma_3.44.3                                       
+[14] IlluminaHumanMethylation450kmanifest_0.4.0         
+[15] IlluminaHumanMethylation450kanno.ilmn12.hg19_0.6.0 
+[16] minfi_1.34.0                                       
+[17] bumphunter_1.30.0                                  
+[18] locfit_1.5-9.4                                     
+[19] iterators_1.0.12                                   
+[20] foreach_1.5.0                                      
+[21] Biostrings_2.56.0                                  
+[22] XVector_0.28.0                                     
+[23] SummarizedExperiment_1.18.2                        
+[24] DelayedArray_0.14.1                                
+[25] matrixStats_0.56.0                                 
+[26] Biobase_2.48.0                                     
+[27] GenomicRanges_1.40.0                               
+[28] GenomeInfoDb_1.24.2                                
+[29] IRanges_2.22.2                                     
+[30] S4Vectors_0.26.1                                   
+[31] BiocGenerics_0.34.0                                
+[32] TCGAbiolinks_2.16.3                                
+
+loaded via a namespace (and not attached):
+  [1] R.utils_2.10.1                tidyselect_1.1.0              RSQLite_2.2.0                
+  [4] AnnotationDbi_1.50.3          htmlwidgets_1.5.1             BiocParallel_1.22.0          
+  [7] munsell_0.5.0                 codetools_0.2-16              preprocessCore_1.50.0        
+ [10] statmod_1.4.34                withr_2.2.0                   colorspace_1.4-1             
+ [13] knitr_1.29                    rstudioapi_0.11               labeling_0.3                 
+ [16] GenomeInfoDbData_1.2.3        farver_2.0.3                  bit64_4.0.2                  
+ [19] pheatmap_1.0.12               rhdf5_2.32.2                  downloader_0.4               
+ [22] vctrs_0.3.2                   generics_0.0.2                xfun_0.16                    
+ [25] biovizBase_1.36.0             R6_2.4.1                      illuminaio_0.30.0            
+ [28] AnnotationFilter_1.12.0       bitops_1.0-6                  reshape_0.8.8                
+ [31] assertthat_0.2.1              promises_1.1.1                scales_1.1.1                 
+ [34] bsseq_1.24.4                  nnet_7.3-14                   gtable_0.3.0                 
+ [37] ensembldb_2.12.1              rlang_0.4.7                   genefilter_1.70.0            
+ [40] splines_4.0.2                 rtracklayer_1.48.0            lazyeval_0.2.2               
+ [43] DSS_2.36.0                    GEOquery_2.56.0               dichromat_2.0-0              
+ [46] checkmate_2.0.0               BiocManager_1.30.10           yaml_2.2.1                   
+ [49] GenomicFeatures_1.40.1        backports_1.1.7               httpuv_1.5.4                 
+ [52] Hmisc_4.4-1                   tools_4.0.2                   nor1mix_1.3-0                
+ [55] ellipsis_0.3.1                siggenes_1.62.0               Rcpp_1.0.5                   
+ [58] plyr_1.8.6                    base64enc_0.1-3               progress_1.2.2               
+ [61] zlibbioc_1.34.0               purrr_0.3.4                   RCurl_1.98-1.2               
+ [64] prettyunits_1.1.1             rpart_4.1-15                  openssl_1.4.2                
+ [67] cluster_2.1.0                 tinytex_0.25                  magrittr_1.5                 
+ [70] data.table_1.13.0             ProtGenerics_1.20.0           mime_0.9                     
+ [73] hms_0.5.3                     xtable_1.8-4                  XML_3.99-0.5                 
+ [76] jpeg_0.1-8.1                  readxl_1.3.1                  mclust_5.4.6                 
+ [79] gridExtra_2.3                 compiler_4.0.2                biomaRt_2.44.1               
+ [82] tibble_3.0.3                  crayon_1.3.4                  R.oo_1.24.0                  
+ [85] htmltools_0.5.0               later_1.1.0.1                 Formula_1.2-3                
+ [88] tidyr_1.1.1                   DBI_1.1.0                     MASS_7.3-51.6                
+ [91] rappdirs_0.3.1                Matrix_1.2-18                 readr_1.3.1                  
+ [94] cli_2.0.2                     permute_0.9-5                 quadprog_1.5-8               
+ [97] R.methodsS3_1.8.1             pkgconfig_2.0.3               GenomicAlignments_1.24.0     
+[100] foreign_0.8-80                xml2_1.3.2                    annotate_1.66.0              
+[103] rngtools_1.5                  multtest_2.44.0               barplot3d_1.0.1              
+[106] beanplot_1.2                  maftools_2.4.12               rvest_0.3.6                  
+[109] doRNG_1.8.2                   scrime_1.3.5                  stringr_1.4.0                
+[112] VariantAnnotation_1.34.0      digest_0.6.25                 cellranger_1.1.0             
+[115] base64_2.0                    htmlTable_2.1.0               DelayedMatrixStats_1.10.1    
+[118] curl_4.3                      shiny_1.5.0                   Rsamtools_2.4.0              
+[121] gtools_3.8.2                  lifecycle_0.2.0               nlme_3.1-148                 
+[124] jsonlite_1.7.1                Rhdf5lib_1.10.1               fansi_0.4.1                  
+[127] askpass_1.1                   BSgenome_1.56.0               pillar_1.4.6                 
+[130] lattice_0.20-41               fastmap_1.0.1                 httr_1.4.2                   
+[133] survival_3.1-12               interactiveDisplayBase_1.26.3 glue_1.4.1                   
+[136] png_0.1-7                     BiocVersion_3.11.1            bit_4.0.4                    
+[139] stringi_1.4.6                 HDF5Array_1.16.1              blob_1.2.1                   
+[142] org.Hs.eg.db_3.11.4           latticeExtra_0.6-29           memoise_1.1.0                
+[145] dplyr_1.0.1 
+```
