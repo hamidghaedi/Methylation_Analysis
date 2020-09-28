@@ -411,6 +411,8 @@ edgeR_limma.pipe = function(
               samples=clinical.exp,
               genes=data.frame(rownames(exp_mat)))
   
+  # design
+  design = model.matrix(~ group)
   # filtering
   keep = filterByExpr(d,design)
   d = d[keep,,keep.lib.sizes=FALSE]
