@@ -352,7 +352,7 @@ sapply(rownames(topDV)[1:10], function(cpg){
   ![alt text](https://github.com/hamidghaedi/methylation_analysis/blob/master/VMCs.PNG)
 
 ## Integrated analysis
-Aberrant methylation of CpGs in promoter  potentially could alter downstream gene expression level by interfering transcription factor function, and this process is knows as *cis-regulation*. In the other hand,  CpGs may also affect expression of genes that are located far away from them in genome. Usually this could be observed when if CpGs position  locations are happened to be in regulatory elements like enhancers. This type of regulation between CpG and gene is known as *trans-regulation*.
+Aberrant methylation of CpGs in promoter potentially could alter downstream gene expression levels by interfering transcription factor function, and this process is known as *cis-regulation*. On the other hand, CpGs may also affect the expression of genes that are located far away from them in the genome. Usually, this could be observed when if CpGs position locations are happened to be in regulatory elements like enhancers. This type of regulation between CpG and gene is known as *trans-regulation*.
 
 
 Steps toward cis-regulation analysis:
