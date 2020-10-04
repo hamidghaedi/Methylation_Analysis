@@ -322,7 +322,7 @@ dev.off()
 
 ## Differential variability analysis
 
-Rather than testing for DMCs and DMRs, we may be interested in testing for differences between group variances. This could be quite helpful for feature selection in ML baesd projects. In these situation you may perefre to selct variables that shows great diffrences between groups.
+Rather than testing for DMCs and DMRs, we may be interested in testing for differences between group variances. This could be quite helpful for feature selection in ML based projects. In this situation you may prefer to select variables that show great differences between groups.
 ```R
 #__________________________Differential variability_________________#
 fitvar <- varFit(mval, design = design, coef = c(1,2))
