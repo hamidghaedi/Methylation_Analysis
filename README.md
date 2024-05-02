@@ -24,7 +24,7 @@ library(RColorBrewer)
 library(edgeR)
 
 #increase memory size
-memory.limit(size = 28000) # do this on your own risk! 
+memory.limit(size = 28000) # do this at your own risk! 
 ```
 ## Data download and preparation
 ```R
@@ -35,7 +35,7 @@ query_met <- GDCquery(project= "TCGA-BLCA",
                            platform = "Illumina Human Methylation 450", 
                            legacy = TRUE)
 GDCdownload(query_met)
-#putting files togathers
+#putting files together
 data.met <- GDCprepare(query_met)
 #saving the met object
 saveRDS(object = data.met,
@@ -53,17 +53,17 @@ clinical <- data.frame(data.met@colData)
 # get the 450k annotation data
 ann450k <- getAnnotation(IlluminaHumanMethylation450kanno.ilmn12.hg19)
 
-## remove probes with NA
+## Remove probes with NA
 probe.na <- rowSums(is.na(met))
 
 table(probe.na == 0)
 #FALSE   TRUE 
 #103553 382024 
-# chose those has not NA values in rows
+# chose those that have no NA values in rows
 probe <- probe.na[probe.na == 0]
 met <- met[row.names(met) %in% names(probe), ]
 
-## remove probes that match to chromosome  X and Y 
+## remove probes that match chromosomes  X and Y 
 keep <- !(row.names(met) %in% ann450k$Name[ann450k$chr %in% c("chrX","chrY")])
 table(keep)
 met <- met[keep, ]
@@ -94,7 +94,7 @@ crs.reac <- crs.reac$TargetID[-1]
 met <- met[ -which(row.names(met) %in% crs.reac), ]
 bval <- met
 
-## converting beta values to m_values
+## Converting beta values to m_values
 ## m = log2(beta/1-beta)
 mval <- t(apply(met, 1, function(x) log2(x/(1-x))))
 #______________saving/loading_____________________#
@@ -106,7 +106,7 @@ mval <- t(apply(met, 1, function(x) log2(x/(1-x))))
 ```
 ## Differential methylation analysis
 ### Different methylated CpGs (DMC) or Probe-wise differential methylation analysis
-Here we are intrested to find probes that are diffrentially methylated between low-grade and high-grade bladder cancer. In the ```clinical``` dataset , there is column ```paper_Histologic.grade``` that provides data on tumor grade. Also as one can see, most of low-grade bladder cancer samples belong to the *luminal papillary* subtype. 
+Here we are interested in finding probes that are differentially methylated between low-grade and high-grade bladder cancer. In the ```clinical``` dataset, there is column ```paper_Histologic.grade``` that provides data on tumor grade. Also as one can see, most of low-grade bladder cancer samples belong to the *luminal papillary* subtype. 
 
 ```R
 table(clinical$paper_Histologic.grade, clinical$paper_mRNA.cluster)
@@ -117,7 +117,7 @@ table(clinical$paper_Histologic.grade, clinical$paper_mRNA.cluster)
 #  ND                      0       0                   1                 2   0        0
 
 
-# filtering and grouping
+# Filtering and grouping
 clinical <- clinical[, c("barcode", "paper_Histologic.grade", "paper_mRNA.cluster")]
 clinical <- na.omit(clinical)
 clinical <- clinical[-which(clinical$paper_mRNA.cluster == "ND"), ]
@@ -171,7 +171,7 @@ sapply(rownames(deff.meth)[1:10], function(cpg){
 ![alt text](https://github.com/hamidghaedi/methylation_analysis/blob/master/dmc.png) 
 
 ```R
-# making a volcano plot
+# Making a volcano plot
 #making dataset
 dat <- data.frame(foldchange = fit[["coefficients"]][,2], logPvalue =  -log10(fit2[["p.value"]][,2]))
 dat$threshold <- as.factor(abs(dat$foldchange) < 0.4)
@@ -194,7 +194,7 @@ ggplot(data=dat, aes(x=foldchange, y = logPvalue, color=threshold)) +
   
 ### Differentially methylated regions (DMRs) analysis
 ```R
-# setting some annotation
+# Setting some annotation
 myAnnotation <- cpg.annotate(object = mval, datatype = "array", 
                              what = "M", 
                              analysis.type = "differential", 
@@ -216,7 +216,7 @@ results.ranges
 # visualization
 dmr.table <- data.frame(results.ranges)
 
-# setting up variable for groupinh and color
+# Setting up variables for groupinh and color
 
 pal <- brewer.pal(8,"Dark2")
 groups <- pal[1:length(unique(clinical$paper_Histologic.grade))]
@@ -232,7 +232,7 @@ chrom <- as.character(seqnames(results.ranges[dmrIndex]))
 start <- as.numeric(start(results.ranges[dmrIndex]))
 end <- as.numeric(end(results.ranges[dmrIndex]))
 
-# add 25% extra space to plot
+# Add 25% extra space to plot
 minbase <- start - (0.25*(end-start))
 maxbase <- end + (0.25*(end-start))
 
@@ -255,7 +255,7 @@ dnaseData <- GRanges(seqnames=chr6.dnase[,1],
                      strand=Rle(rep("*",nrow(chr6.dnase))),
                      data=chr6.dnase[,5])
 
-#Setting up the ideogram, genome and RefSeq tracks 
+#Setting up the ideogram, genome, and RefSeq tracks 
 
 iTrack <- IdeogramTrack(genome = gen, chromosome = chrom, name=paste0(chrom))
 gTrack <- GenomeAxisTrack(col="black", cex=1, name="", fontcolor="black")
@@ -280,7 +280,7 @@ cpgData <- GRanges(seqnames=Rle(ann450kOrd$chr),
 
 # methylation data track
 methTrack <- DataTrack(range=cpgData, 
-                       groups=clinical$paper_Histologic.grade, # change this if your groups are diffrent
+                       groups=clinical$paper_Histologic.grade, # change this if your groups are different
                        genome = gen,
                        chromosome=chrom,
                        ylim=c(-0.05,1.05),
@@ -306,7 +306,7 @@ dmrTrack <- AnnotationTrack(start=start, end=end, genome=gen, name="DMR",
                             chromosome=chrom,fill="darkred")
 
 
-# Set up the track list and indicate the relative sizes of the different tracks. 
+# Set up the tracklist and indicate the relative sizes of the different tracks. 
 # Finally, draw the plot using the plotTracks function
 tracks <- list(iTrack, gTrack, methTrack, dmrTrack, islandTrack, dnaseTrack,
                rTrack)
@@ -322,7 +322,7 @@ dev.off()
 
 ## Differential variability analysis
 
-Rather than testing for DMCs and DMRs, we may be interested in testing for differences between group variances. This could be quite helpful for feature selection in ML based projects. In this situation you may prefer to select variables that show great differences between groups.
+Rather than testing for DMCs and DMRs, we may be interested in testing for differences between group variances. This could be quite helpful for feature selection in ML based projects. In this situation, you may prefer to select variables that show great differences between groups.
 ```R
 #__________________________Differential variability_________________#
 fitvar <- varFit(mval, design = design, coef = c(1,2))
@@ -352,13 +352,13 @@ sapply(rownames(topDV)[1:10], function(cpg){
   ![alt text](https://github.com/hamidghaedi/methylation_analysis/blob/master/VMCs.PNG)
 
 ## Integrated analysis
-Aberrant methylation of CpGs in promoter potentially could alter downstream gene expression levels by interfering transcription factor function, and this process is known as *cis-regulation*. On the other hand, CpGs may also affect the expression of genes that are located far away from them in the genome. Usually, this could be observed when if CpGs position locations are happened to be in regulatory elements like enhancers. This type of regulation between CpG and gene is known as *trans-regulation*.
+Aberrant methylation of CpGs in promoter potentially could alter downstream gene expression levels by interfering with transcription factor function, and this process is known as *cis-regulation*. On the other hand, CpGs may also affect the expression of genes that are located far away from them in the genome. Usually, this could be observed when if CpGs position locations have happened to be in regulatory elements like enhancers. This type of regulation between CpG and gene is known as *trans-regulation*.
 
 
 Steps toward cis-regulation analysis:
-- Gene expression analysis (making normalized count matrice, finding diffrentially expressed genes)
+- Gene expression analysis (making normalized count matrice, finding differentially expressed genes)
 - finding probes resided within promoters
-- finding diffrentially methylated probes (|beta value| > 0.2)
+- finding differentially methylated probes (|beta value| > 0.2)
 - Performing correlation analysis to find those with |r| > 0.3 and p-value < 0.05
 
 ```R
@@ -388,7 +388,7 @@ clinical.exp <- clinical.exp[(clinical.exp$paper_Histologic.grade == "High Grade
                         clinical.exp$paper_Histologic.grade == "Low Grade"), ]
 clinical.exp$paper_Histologic.grade[clinical.exp$paper_Histologic.grade == "High Grade"] <- "High_Grade"
 clinical.exp$paper_Histologic.grade[clinical.exp$paper_Histologic.grade == "Low Grade"] <- "Low_Grade"
-# since most of low-graded are in Luminal_papilary category, we remain focus on this type
+# since most of the low-graded are in the Luminal_papilary category, we remain focused on this type
 clinical.exp <- clinical.exp[clinical.exp$paper_mRNA.cluster == "Luminal_papillary", ]
 clinical.exp <- clinical.exp[!is.na(clinical.exp$paper_Histologic.grade), ]
 
@@ -440,7 +440,7 @@ edgeR_limma.pipe = function(
 # Runing the pipe
 de.list <- edgeR_limma.pipe(rna,"paper_Histologic.grade", "Low_Grade" )
 de.genes <- de.list$DE
-#ordering diffrentially expressed genes
+#ordering differentially expressed genes
 de.genes<-de.genes[with(de.genes, order(abs(logFC), adj.P.Val, decreasing = TRUE)), ]
 # voomObj is normalized expression values on the log2 scale
 norm.count <- data.frame(de.list$voomObj)
@@ -453,11 +453,11 @@ colnames(norm.count) <- chartr(".", "-", colnames(norm.count))
 # finding probes in promoter of genes
 table(data.frame(ann450k)$Regulatory_Feature_Group) ## to find regulatory features of probes
 
-# selecting a subset of probes associated with promoted
+# selecting a subset of probes associated with the promoter
 promoter.probe <- rownames(data.frame(ann450k))[data.frame(ann450k)$Regulatory_Feature_Group 
                                                  %in% c("Promoter_Associated", "Promoter_Associated_Cell_type_specific")]
 
-# find genes probes with significantly different methylation status in 
+# find gene probes with significantly different methylation status in 
 # low- and high-grade bladder cancer
 
 low.g_id <- clinical$barcode[clinical$paper_Histologic.grade == "Low Grade"]
@@ -478,7 +478,7 @@ db.genes <- db.genes[!duplicated(db.genes$comb), ]
 db.genes <- db.genes[, -3]
 
 # doing correlation analysis
-# polishing matrices to have only high grade samples
+# polishing matrices to have only high-grade samples
 cis.bval.mat <- bval[, high.g_id]
 cis.exp.mat <- norm.count[, rownames(clinical.exp)[clinical.exp$paper_Histologic.grade == "High_Grade"]]
 #making patient name similar
@@ -486,7 +486,7 @@ colnames(cis.bval.mat) <- substr(colnames(cis.bval.mat),1,19)
 colnames(cis.exp.mat) <- substr(colnames(cis.exp.mat),1,19)
 cis.exp.mat <- cis.exp.mat[, colnames(cis.bval.mat)]
 
-#editing expression matrix rowname
+#editing expression matrix row name
 df <- data.frame(name = row.names(cis.exp.mat)) # keeping rownames as a temporary data frame
 df <- data.frame(do.call('rbind', strsplit(as.character(df$name),'|',fixed=TRUE))) # this do magic like "text to column" in Excel!
 rowName <- df$X1
@@ -494,7 +494,7 @@ rowName <- df$X1
 table(duplicated(rowName))
 #FALSE  TRUE 
 #20530     1 
-# in order to resolve  duplucation issue
+# in order to resolve  duplication issue
 rowName[duplicated(rowName) == TRUE]
 #[1] "SLC35E2"
 #
@@ -565,7 +565,7 @@ rowName <- df$X1
 table(duplicated(rowName))
 #FALSE  TRUE 
 #16339     1    
-# in order to resolve  duplication issue
+# in order to resolve  the duplication issue
 rowName[duplicated(rowName) == TRUE]
 grep("SLC35E2", rowName)
 #[1]  9225 15546
